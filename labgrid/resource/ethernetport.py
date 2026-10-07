@@ -5,7 +5,7 @@ from time import time
 import attr
 
 from ..factory import target_factory
-from .common import ManagedResource, ResourceManager
+from .common import ManagedResource, ResourceManager, async_sleep_if_possible
 
 @attr.s
 class SNMPSwitch:
@@ -290,9 +290,8 @@ class EthernetPortManager(ResourceManager):
         Returns:
             None
         """
-        import asyncio
-        if not self.loop.is_running():
-            self.loop.run_until_complete(asyncio.sleep(0.0))
+        async_sleep_if_possible(self.loop, 0.0)
+
         for resource in self.resources:
             switch = self.switches.get(resource.switch)
             if not switch:

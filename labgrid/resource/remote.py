@@ -3,7 +3,7 @@ import os
 import attr
 
 from ..factory import target_factory
-from .common import NetworkResource, ManagedResource, ResourceManager
+from .common import NetworkResource, ManagedResource, ResourceManager, async_sleep_if_possible
 
 
 @attr.s(eq=False)
@@ -87,9 +87,8 @@ class RemotePlaceManager(ResourceManager):
         remote_place.tags = copy.deepcopy(place.tags)
 
     def poll(self):
-        import asyncio
-        if not self.loop.is_running():
-            self.loop.run_until_complete(asyncio.sleep(0.1))
+        async_sleep_if_possible(self.loop, 0.1)
+
         for resource in self.resources + self.unmanaged_resources:
             if isinstance(resource, RemotePlace):
                 continue

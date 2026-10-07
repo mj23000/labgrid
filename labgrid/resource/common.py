@@ -1,3 +1,5 @@
+import contextlib
+import asyncio
 import logging
 import shlex
 from typing import Dict, Type, List
@@ -161,3 +163,15 @@ class ManagedResource(Resource):
 
     def get_managed_parent(self):
         return self
+
+def async_sleep_if_possible(loop: asyncio.AbstractEventLoop | None, sleep_period: float) -> None:
+    """Sleep for a given period of time. Prioritizes using an existing loop if available."""
+
+    with contextlib.suppress(RuntimeError):
+        loop = asyncio.get_running_loop()
+
+    if not loop:
+        return
+
+    if not loop.is_running():
+        loop.run_until_complete(asyncio.sleep(sleep_period))
