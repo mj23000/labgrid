@@ -24,7 +24,7 @@ from getpass import getuser
 from collections import defaultdict, OrderedDict
 from datetime import datetime
 from pprint import pformat
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import attr
 import grpc
@@ -1831,11 +1831,11 @@ def ensure_event_loop(external_loop=None):
 def start_session(
     address: str,
     *,
-    extra: Dict[str, Any] = None,
-    credentials: grpc.ChannelCredentials = None,
+    extra: Optional[Dict[str, Any]] = None,
+    credentials: Optional[grpc.ChannelCredentials] = None,
     debug: bool = False,
     loop: "asyncio.AbstractEventLoop | None" = None,
-):
+) -> ClientSession:
     """
     Starts a ClientSession.
 
@@ -1850,16 +1850,38 @@ def start_session(
     """
     loop = ensure_event_loop(loop)
 
-    if extra is None:
-        extra = {}
-
     if debug:
         loop.set_debug(True)
+
+    session = loop.run_until_complete(async_start_session(address, extra=extra, credentials=credentials, debug=debug))
+    return session
+
+
+async def async_start_session(
+    address: str,
+    *,
+    extra: Optional[Dict[str, Any]] = None,
+    credentials: Optional[grpc.ChannelCredentials] = None,
+) -> ClientSession:
+    """
+    Starts a ClientSession with existing asyncio loop.
+
+    Args:
+        address: coordinator address as HOST[:PORT], PORT defaults to 20408
+        extra: additional kwargs for ClientSession
+        credentials: optional gRPC channel credentials; when None, use an
+              insecure channel
+    """
+
+    loop = asyncio.get_running_loop()
+
+    if extra is None:
+        extra = {}
 
     address = proxymanager.get_grpc_address(address, default_port=20408)
 
     session = ClientSession(address, loop, credentials=credentials, **extra)
-    loop.run_until_complete(session.start())
+    await session.start()
     return session
 
 
